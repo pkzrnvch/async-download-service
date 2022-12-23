@@ -1,9 +1,37 @@
+import asyncio
+
 from aiohttp import web
 import aiofiles
+import os
+
+CHUNK_SIZE = 256 * 1024
+PHOTOS_DIRECTORY = 'test_photos'
 
 
 async def archive(request):
-    raise NotImplementedError
+    archive_hash = request.match_info['archive_hash']
+
+    process = await asyncio.create_subprocess_exec(
+        'zip',
+        '-r',
+        '-',
+        '.',
+        cwd=os.path.join(PHOTOS_DIRECTORY, archive_hash),
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+
+    response = web.StreamResponse()
+    response.headers['Content-Disposition'] = f'attachment; filename="{archive_hash}.zip"'
+    await response.prepare(request)
+
+    while True:
+        data_chunk = await process.stdout.read(CHUNK_SIZE)
+        await response.write(data_chunk)
+        if not data_chunk:
+            break
+
+    return response
 
 
 async def handle_index_page(request):
