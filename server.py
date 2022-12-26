@@ -5,18 +5,25 @@ import aiofiles
 import os
 
 CHUNK_SIZE = 256 * 1024
-PHOTOS_DIRECTORY = 'test_photos'
+PHOTOS_GENERAL_DIRECTORY_PATH = 'test_photos'
 
 
 async def archive(request):
     archive_hash = request.match_info['archive_hash']
+
+    requested_photos_directory_path = os.path.join(
+        PHOTOS_GENERAL_DIRECTORY_PATH,
+        archive_hash
+    )
+    if not os.path.exists(requested_photos_directory_path):
+        raise web.HTTPNotFound(reason='Архив не существует или был удален')
 
     process = await asyncio.create_subprocess_exec(
         'zip',
         '-r',
         '-',
         '.',
-        cwd=os.path.join(PHOTOS_DIRECTORY, archive_hash),
+        cwd=requested_photos_directory_path,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
