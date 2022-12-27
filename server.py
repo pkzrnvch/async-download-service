@@ -32,6 +32,7 @@ async def archive(request):
     )
 
     response = web.StreamResponse()
+    response.enable_chunked_encoding()
     response.headers['Content-Disposition'] = f'attachment; filename="{archive_hash}.zip"'
     await response.prepare(request)
 
