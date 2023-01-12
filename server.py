@@ -36,8 +36,8 @@ async def archive(request):
     response.headers['Content-Disposition'] = f'attachment; filename="{archive_hash}.zip"'
     await response.prepare(request)
 
-    while True:
-        try:
+    try:
+        while True:
             data_chunk = await zip_process.stdout.read(CHUNK_SIZE)
             logger.debug('Sending archive chunk ...')
             await response.write(data_chunk)
@@ -45,10 +45,11 @@ async def archive(request):
                 await asyncio.sleep(request.app['delay'])
             if not data_chunk:
                 break
-        except asyncio.CancelledError:
-            logger.warning('Download was interrupted')
-            raise
-        finally:
+    except asyncio.CancelledError:
+        logger.warning('Download was interrupted')
+        raise
+    finally:
+        if zip_process.returncode is None:
             zip_process.kill()
             await zip_process.communicate()
             logger.warning('Zip process was killed')
